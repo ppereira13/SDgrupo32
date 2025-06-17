@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Sistema de Monitoramento Oceânico";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Sistema de Monitoramento Oceânico</h1>
+    
+    @if (ViewBag.WavysAtivas != null && ViewBag.WavysAtivas.Count > 0)
+    {
+        <h2>WAVYs Conectadas:</h2>
+        <ul class="list-group">
+            @foreach (var wavyId in ViewBag.WavysAtivas)
+            {
+                <li class="list-group-item">@wavyId</li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p class="alert alert-warning">Nenhuma WAVY conectada</p>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Atualização automática da lista de WAVYs
+        function refreshWavyList() {
+            fetch('@Url.Action("Index")')
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newList = doc.querySelector('.card-body');
+                    const currentList = document.querySelector('.card-body');
+                    if (newList && currentList) {
+                        currentList.innerHTML = newList.innerHTML;
+                    }
+                })
+                .catch(error => console.error('Erro ao atualizar lista:', error));
+        }
+
+        // Atualizar a lista a cada 10 segundos
+        setInterval(refreshWavyList, 10000);
+    </script>
+} 

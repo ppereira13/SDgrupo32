@@ -1,0 +1,748 @@
+@model List<WavyDashboard.Services.WavyStatus>
+
+@{
+    ViewData["Title"] = "Dashboard Wavy Moderno";
+}
+
+<div class="header">
+    <h1>🌊 WAVY Analytics Dashboard</h1>
+</div>
+
+<div class="container">
+    <div class="stats-overview" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Visão Geral em Tempo Real</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; justify-content:center;">
+            <div class="stat-card">
+                <div class="stat-value" id="headerTotalDevices">0</div>
+                <div class="stat-label">WAVYs Conectadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="headerAvgValue">--</div>
+                <div class="stat-label">Média Sensor (últimos 60s)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="headerMinMax">-- / --</div>
+                <div class="stat-label">Mín / Máx (últimos 60s)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="headerStdDev">--</div>
+                <div class="stat-label">Desvio Padrão (últimos 60s)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="controls">
+        <div class="controls-grid">
+            <div class="control-group">
+                <label for="wavySelect">Dispositivo WAVY:</label>
+                <select id="wavySelect">
+                    <option value="">Todos os dispositivos</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="sensorSelect">Tipo de Sensor:</label>
+                <select id="sensorSelect">
+                    <option value="">Todos os sensores</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="startDate">Data Inicial:</label>
+                <input type="datetime-local" id="startDate">
+            </div>
+            <div class="control-group">
+                <label for="endDate">Data Final:</label>
+                <input type="datetime-local" id="endDate">
+            </div>
+        </div>
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="loadData()">📊 Carregar Dados</button>
+            <button class="btn btn-secondary" onclick="performAnalysis()">🔍 Analisar</button>
+            <button class="btn btn-secondary" onclick="exportData()">📤 Exportar</button>
+            <button class="btn btn-danger" onclick="clearData()">🗑️ Limpar</button>
+        </div>
+    </div>
+
+    <!-- Estatísticas Gerais -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="totalDevices">0</div>
+            <div class="stat-label">Dispositivos Ativos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalReadings">0</div>
+            <div class="stat-label">Leituras no Período</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgValue">0</div>
+            <div class="stat-label">Média do Sensor</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="alertsCount">0</div>
+            <div class="stat-label">Alertas Ativos</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('dashboardTab')">Dashboard</button>
+        <button class="tab-btn" onclick="showTab('analysisTab')">Análise</button>
+        <button class="tab-btn" onclick="showTab('realtimeTab')">Tempo Real</button>
+    </div>
+
+    <div id="dashboardTab" class="tab-content" style="display:block;">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <h3>📈 Dados em Tempo Real</h3>
+                    <div class="chart-container">
+                        <canvas id="realtimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <h3>📊 Status dos Dispositivos</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <h3>📉 Tendências Históricas</h3>
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <h3>🗺️ Mapa de Atividade</h3>
+                    <div class="chart-container">
+                        <canvas id="heatmapChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <h3>🟢 Status Individual dos Dispositivos WAVY</h3>
+                    <div id="wavyStatusList" style="display:flex; flex-wrap:wrap; gap:1rem;">
+                        <!-- Status individual dos dispositivos serão carregados aqui via SignalR/JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="analysisTab" class="tab-content" style="display:none;">
+        <!-- Painel de Análise Avançada -->
+        <div class="analysis-panel">
+            <h3>🔬 Análise Avançada de Dados</h3>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Distribuição dos Dados</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="distributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Box Plot</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="boxPlotChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Correlação com Tempo</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="correlationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Detecção de Anomalias</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="anomaliesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analysis-results">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="result-card">
+                            <h4>Estatísticas Básicas</h4>
+                            <div class="result-value" id="meanValue">--</div>
+                            <p>Média dos valores</p>
+                            <div class="result-value" id="stdValue">--</div>
+                            <p>Desvio padrão</p>
+                            <div class="result-value" id="minValue">--</div>
+                            <p>Mínimo</p>
+                            <div class="result-value" id="maxValue">--</div>
+                            <p>Máximo</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="result-card">
+                            <h4>Análise de Padrões</h4>
+                            <div class="result-value" id="trendDirection">--</div>
+                            <p>Direção da tendência</p>
+                            <div class="result-value" id="seasonality">--</div>
+                            <p>Sazonalidade detectada</p>
+                            <div class="result-value" id="correlation">--</div>
+                            <p>Correlação temporal</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="result-card">
+                            <h4>Detecção de Anomalias</h4>
+                            <div class="result-value" id="anomaliesCount">--</div>
+                            <p>Anomalias detectadas</p>
+                            <div class="result-value" id="lastAnomaly">--</div>
+                            <p>Última anomalia</p>
+                            <div class="result-value" id="anomalySeverity">--</div>
+                            <p>Severidade média</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="result-card">
+                            <h4>Qualidade dos Dados</h4>
+                            <div class="result-value" id="dataQuality">--</div>
+                            <p>Qualidade geral</p>
+                            <div class="result-value" id="missingData">--</div>
+                            <p>Dados ausentes</p>
+                            <div class="result-value" id="dataConsistency">--</div>
+                            <p>Consistência</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Dados Detalhados -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4>Dados Detalhados</h4>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table" id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>WAVY ID</th>
+                                    <th>Sensor</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Anomalia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <tr>
+                                    <td colspan="6" class="loading">Carregando dados...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="realtimeTab" class="tab-content" style="display:none;">
+        <div class="card-header">
+            <h3>Dados em Tempo Real (Consola)</h3>
+        </div>
+        <div class="card-body">
+            <div style="margin-bottom:1rem;">
+                <strong>WAVYs Conectadas:</strong>
+                <span id="realtimeWavyCount" style="margin-left:1rem;font-weight:bold;"></span>
+                <ul id="realtimeWavys" style="list-style:none;padding:0;display:flex;gap:1rem;"></ul>
+            </div>
+            <div>
+                <strong>Dados Recebidos:</strong>
+                <pre id="realtimeConsole" style="background:#222;color:#fff;padding:10px;height:200px;overflow:auto;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:2rem;">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>
+                        <i class="fas fa-chart-pie"></i>
+                        Distribuição de Status
+                        <small class="text-muted" style="font-size: 0.8em;">(atualização em tempo real)</small>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="status-summary mt-4">
+                        <div class="status-info">
+                            <p class="mb-2">
+                                <strong>Status mais comum:</strong>
+                                <span id="statusMostCommon" class="badge bg-primary">--</span>
+                            </p>
+                            <p class="mb-2">
+                                <strong>Última atualização:</strong>
+                                <span id="statusLastUpdate" class="text-muted"></span>
+                            </p>
+                        </div>
+                        <div class="status-legend mt-3">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: rgb(34, 197, 94);"></span>
+                                <span class="legend-label">Conectada</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: rgb(239, 68, 68);"></span>
+                                <span class="legend-label">Inativa</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: rgb(249, 115, 22);"></span>
+                                <span class="legend-label">Erro</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: rgb(59, 130, 246);"></span>
+                                <span class="legend-label">Manutenção</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h4>Distribuição de Configuração</h4></div>
+                <div class="card-body">
+                    <canvas id="configChart"></canvas>
+                    <div class="mt-3">Configuração mais comum: <span id="configMostCommon">--</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="margin-top:2rem;">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h4>Histórico de Status (últimos 100 eventos)</h4></div>
+                <div class="card-body">
+                    <table class="table table-sm"><thead><tr><th>Data/Hora</th><th>Status</th></tr></thead><tbody id="statusHistoryTable"></tbody></table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h4>Histórico de Configuração (últimos 100 eventos)</h4></div>
+                <div class="card-body">
+                    <table class="table table-sm"><thead><tr><th>Data/Hora</th><th>Configuração</th></tr></thead><tbody id="configHistoryTable"></tbody></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="~/css/site.css" />
+
+@section Scripts {
+    <!-- Chart.js 4.x -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- BoxPlot plugin compatível com Chart.js 4.x -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@4.3.0/dist/chartjs-chart-box-and-violin-plot.umd.min.js"></script>
+    <!-- Heatmap plugin alternativo (geo) para Chart.js 4.x -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/dist/chartjs-chart-geo.umd.min.js"></script> -->
+    <!-- Seu script -->
+    <script src="~/js/dashboard.js"></script>
+    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+    <script>
+        // Plugins já são registrados automaticamente no Chart.js 4.x
+        // Se necessário, registre manualmente aqui
+
+        var connection = new signalR.HubConnectionBuilder().withUrl("/wavyStatusHub").build();
+        let wavyStatuses = {}; // Para manter o estado dos dispositivos
+
+        connection.on("ReceiveWavyStatus", function (wavyId, status) {
+            console.log(`Status recebido para ${wavyId}: ${status}`);
+            wavyStatuses[wavyId] = status; // Atualiza o estado local
+
+            updateDashboardUI(); // Chama a função para atualizar tudo
+        });
+
+        connection.start().then(function () {
+            console.log("Conectado ao SignalR Hub!");
+            // Carrega o estado inicial após a conexão
+            updateDashboardUI();
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        // Função para atualizar a interface completa (contador e lista individual)
+        async function updateDashboardUI() {
+            try {
+                // Fetch de todos os status para garantir a consistência
+                const response = await fetch('/Dashboard/GetStatus');
+                const statusesFromServer = await response.json();
+
+                // Atualizar o estado local com os dados do servidor
+                wavyStatuses = {};
+                statusesFromServer.forEach(s => {
+                    wavyStatuses[s.id] = s.status; // Assumindo s.id e s.status
+                });
+
+                // 1. Atualizar o contador de dispositivos conectados
+                const connectedCount = Object.values(wavyStatuses).filter(status => status === 'operacao' || status === 'associada').length;
+                document.getElementById('headerTotalDevices').innerText = connectedCount;
+                document.getElementById('totalDevices').innerText = connectedCount; // Se houver outro card para totalDevices
+                console.log(`Total de WAVYs conectadas: ${connectedCount}`);
+
+                // 2. Atualizar a lista de status individuais
+                const wavyStatusListContainer = document.getElementById('wavyStatusList');
+                if (wavyStatusListContainer) {
+                    wavyStatusListContainer.innerHTML = ''; // Limpa e recria
+                    for (const wavyId in wavyStatuses) {
+                        const status = wavyStatuses[wavyId];
+                        const wavyCard = document.createElement('div');
+                        wavyCard.className = 'stat-card'; // Reutiliza o estilo do stat-card
+                        wavyCard.id = `wavy-card-${wavyId}`;
+                        let statusColor = '';
+                        if (status === 'operacao') {
+                            statusColor = 'background-color: #4CAF50; color: white;'; // Verde
+                        } else if (status === 'associada') {
+                            statusColor = 'background-color: #2196F3; color: white;'; // Azul
+                        } else if (status === 'desativada') {
+                            statusColor = 'background-color: #f44336; color: white;'; // Vermelho
+                        } else {
+                            statusColor = 'background-color: #FFC107; color: black;'; // Amarelo
+                        }
+
+                        wavyCard.innerHTML = `
+                            <div class="stat-value" style="${statusColor}">${wavyId}</div>
+                            <div class="stat-label">Status: ${status}</div>
+                        `;
+                        wavyStatusListContainer.appendChild(wavyCard);
+                    }
+                }
+
+                // Opcional: Atualizar gráficos se eles dependem de tempo real
+                // ... (seu código para gráficos) ...
+
+            } catch (error) {
+                console.error("Erro ao atualizar o Dashboard:", error);
+            }
+        }
+
+        // Chamar a função de atualização inicial quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', updateDashboardUI);
+
+        // Funções existentes como loadData, performAnalysis, etc. (mantidas)
+        // ... (resto do seu JavaScript) ...
+
+    </script>
+
+    <style>
+        .header {
+            background-color: #3b82f6; /* indigo-500 */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 1rem;
+        }
+
+        .stats-overview {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-overview .stat-card {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6); /* purple gradient */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2.25rem;
+            font-weight: bold;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .controls {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-group select,
+        .control-group input[type="datetime-local"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tabs {
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            margin-right: 0.5rem;
+            border: none;
+            background: #e5e7eb;
+            cursor: pointer;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-weight: bold;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #dbeafe;
+        }
+
+        .tab-content {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 0 0 0.5rem 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            height: 300px;
+        }
+
+        .analysis-panel {
+            /* styles for analysis panel */
+        }
+
+        .analysis-results .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .analysis-results .col-md-3 {
+            flex: 1 1 23%;
+            min-width: 200px;
+        }
+
+        .result-card {
+            background-color: #f9fafb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .result-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-card .result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+
+        .result-card p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        .data-table th {
+            background-color: #f9fafb;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table .loading {
+            text-align: center;
+            font-style: italic;
+            color: #6b7280;
+        }
+
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-item.active {
+            background-color: #d1fae5;
+        }
+
+        .device-item.warning {
+            background-color: #fef3c7;
+        }
+
+        .device-item.inactive {
+            background-color: #fee2e2;
+        }
+
+        .device-id {
+            font-weight: 600;
+        }
+
+        .device-status {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        
+        .stats-overview .stat-card {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+            color: white;
+        }
+    </style>
+} 

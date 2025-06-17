@@ -1,0 +1,205 @@
+@model List<string>
+
+@{
+    ViewData["Title"] = $"Detalhes - {ViewBag.WavyId}";
+}
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Detalhes do Dispositivo @ViewBag.WavyId</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3>Dados e Análises</h3>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">Voltar</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label for="dataType">Tipo de Dado:</label>
+                        <select id="dataType" class="form-control">
+                            @foreach (var dataType in Model)
+                            {
+                                <option value="@dataType">@dataType</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Período:</label>
+                        <div class="d-flex gap-2">
+                            <input type="datetime-local" id="startTime" class="form-control">
+                            <input type="datetime-local" id="endTime" class="form-control">
+                            <button onclick="updateData()" class="btn btn-primary">Atualizar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Gráfico</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Análise Estatística</h4>
+                </div>
+                <div class="card-body">
+                    <div id="analysisResults">
+                        <p>Selecione um período e clique em Atualizar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let chart = null;
+
+        function updateData() {
+            const wavyId = '@ViewBag.WavyId';
+            const dataType = document.getElementById('dataType').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            // Buscar dados para o gráfico
+            fetch(`/Dashboard/GetData?wavyId=${wavyId}&dataType=${dataType}&startTime=${startTime}&endTime=${endTime}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateChart(data);
+                });
+
+            // Buscar análise estatística
+            fetch(`/Dashboard/GetAnalysis?wavyId=${wavyId}&dataType=${dataType}&startTime=${startTime}&endTime=${endTime}`)
+                .then(response => response.json())
+                .then(analysis => {
+                    updateAnalysis(analysis);
+                });
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => new Date(d.timestamp).toLocaleString()),
+                    datasets: [{
+                        label: document.getElementById('dataType').value,
+                        data: data.map(d => d.value),
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Tempo'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Valor'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAnalysis(analysis) {
+            if (!analysis) {
+                document.getElementById('analysisResults').innerHTML = '<p>Nenhum dado disponível para análise</p>';
+                return;
+            }
+
+            let html = `
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Média</h6>
+                            <span>${analysis.mean.toFixed(3)}</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Mediana</h6>
+                            <span>${analysis.median.toFixed(3)}</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Desvio Padrão</h6>
+                            <span>${analysis.stdDev.toFixed(3)}</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Mínimo</h6>
+                            <span>${analysis.min.toFixed(3)}</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Máximo</h6>
+                            <span>${analysis.max.toFixed(3)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Estatísticas Adicionais</h6>
+                    <div class="list-group">
+            `;
+
+            for (const [key, value] of Object.entries(analysis.statistics)) {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${key}</h6>
+                            <span>${typeof value === 'number' ? value.toFixed(3) : value}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div></div>';
+            document.getElementById('analysisResults').innerHTML = html;
+        }
+
+        // Inicializar com a última hora
+        window.onload = function() {
+            const now = new Date();
+            const oneHourAgo = new Date(now - 3600000);
+            
+            document.getElementById('startTime').value = oneHourAgo.toISOString().slice(0, 16);
+            document.getElementById('endTime').value = now.toISOString().slice(0, 16);
+            
+            updateData();
+        };
+    </script>
+} 

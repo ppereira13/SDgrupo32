@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wavy", "Wavy\Wavy.csproj", "{4D1B6E40-1D37-44C6-A6E5-F64B477F68F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Servidor", "Servidor\Servidor.csproj", "{4D1B6E40-1D37-44C6-A6E5-F64B477F68F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agredador", "Agredador\Agredador.csproj", "{4D1B6E40-1D37-44C6-A6E5-F64B477F68F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PreProcessamentoRPC", "PreProcessamentoRPC\PreProcessamentoRPC.csproj", "{4D1B6E40-1D37-44C6-A6E5-F64B477F68F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PreProcessamentoRPCClient", "PreProcessamentoRPCClient\PreProcessamentoRPCClient.csproj", "{4D1B6E40-1D37-44C6-A6E5-F64B477F68F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WavyDashboard", "WavyDashboard\WavyDashboard.csproj", "{33109BCC-E0D6-8659-1745-5C4D8BBBA0FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1B6E40-1D37-44C6-A6E5-F64B477F68F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33109BCC-E0D6-8659-1745-5C4D8BBBA0FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33109BCC-E0D6-8659-1745-5C4D8BBBA0FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33109BCC-E0D6-8659-1745-5C4D8BBBA0FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33109BCC-E0D6-8659-1745-5C4D8BBBA0FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

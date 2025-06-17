@@ -1,0 +1,307 @@
+@{
+    ViewData["Title"] = $"Detalhes da {ViewBag.WavyId}";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@ViewData["Title"]</h1>
+        <div>
+            <button class="btn btn-success" id="toggleRealTime">Iniciar Tempo Real</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Voltar</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Tipos de Dados Disponíveis</h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.DataTypes != null && ViewBag.DataTypes.Count > 0)
+                    {
+                        <div class="list-group">
+                            @foreach (var dataType in ViewBag.DataTypes)
+                            {
+                                <button class="list-group-item list-group-item-action"
+                                        onclick="loadChartData('@ViewBag.WavyId', '@dataType')">
+                                    @dataType
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Nenhum tipo de dado disponível.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Análise de Dados</h5>
+                </div>
+                <div class="card-body">
+                    <form id="analysisForm">
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Dado</label>
+                            <select class="form-select" id="dataType" required>
+                                @if (ViewBag.DataTypes != null)
+                                {
+                                    foreach (var dataType in ViewBag.DataTypes)
+                                    {
+                                        <option value="@dataType">@dataType</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Período</label>
+                            <div class="row">
+                                <div class="col">
+                                    <input type="datetime-local" class="form-control" id="startTime" required>
+                                </div>
+                                <div class="col">
+                                    <input type="datetime-local" class="form-control" id="endTime" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Análise</label>
+                            <select class="form-select" id="analysisType" required>
+                                <option value="media">Média</option>
+                                <option value="mediana">Mediana</option>
+                                <option value="desvio">Desvio Padrão</option>
+                                <option value="tendencia">Análise de Tendência</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">Analisar</button>
+                            <button type="button" class="btn btn-success" onclick="exportData()">Exportar Dados</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Visualização de Dados</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="changeChartType('line')">Linha</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="changeChartType('bar')">Barra</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="changeChartType('scatter')">Dispersão</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Últimos Dados Recebidos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="latestData">
+                                @if (ViewBag.LatestData != null)
+                                {
+                                    foreach (var data in ViewBag.LatestData)
+                                    {
+                                        <tr>
+                                            <td>@data.DataType</td>
+                                            <td>@data.Value</td>
+                                            <td>@data.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let currentChart = null;
+        let realTimeInterval = null;
+        let currentDataType = null;
+        let isRealTimeEnabled = false;
+
+        function changeChartType(type) {
+            if (currentChart) {
+                currentChart.config.type = type;
+                currentChart.update();
+            }
+        }
+
+        async function loadChartData(wavyId, dataType) {
+            currentDataType = dataType;
+            const response = await fetch(`/Home/GetChartData?wavyId=${wavyId}&dataType=${dataType}`);
+            const data = await response.json();
+            updateChart(data, dataType);
+        }
+
+        function updateChart(data, dataType) {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                    datasets: [{
+                        label: dataType,
+                        data: data.map(d => d.value),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: isRealTimeEnabled ? 0 : 1000
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Tempo'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Valor'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('toggleRealTime').addEventListener('click', function() {
+            if (isRealTimeEnabled) {
+                stopRealTimeUpdates();
+                this.textContent = 'Iniciar Tempo Real';
+                this.classList.replace('btn-danger', 'btn-success');
+            } else {
+                startRealTimeUpdates();
+                this.textContent = 'Parar Tempo Real';
+                this.classList.replace('btn-success', 'btn-danger');
+            }
+            isRealTimeEnabled = !isRealTimeEnabled;
+        });
+
+        function startRealTimeUpdates() {
+            if (!currentDataType) return;
+            
+            realTimeInterval = setInterval(async () => {
+                const response = await fetch(`/Home/GetRealTimeData?wavyId=@ViewBag.WavyId&dataType=${currentDataType}`);
+                const newData = await response.json();
+                
+                if (currentChart && newData) {
+                    currentChart.data.labels.push(new Date(newData.timestamp).toLocaleTimeString());
+                    currentChart.data.datasets[0].data.push(newData.value);
+                    
+                    if (currentChart.data.labels.length > 50) {
+                        currentChart.data.labels.shift();
+                        currentChart.data.datasets[0].data.shift();
+                    }
+                    
+                    currentChart.update();
+                    updateLatestDataTable(newData);
+                }
+            }, 1000);
+        }
+
+        function stopRealTimeUpdates() {
+            if (realTimeInterval) {
+                clearInterval(realTimeInterval);
+                realTimeInterval = null;
+            }
+        }
+
+        function updateLatestDataTable(newData) {
+            const tbody = document.getElementById('latestData');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${newData.dataType}</td>
+                <td>${newData.value}</td>
+                <td>${new Date(newData.timestamp).toLocaleString()}</td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+            
+            if (tbody.children.length > 25) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        document.getElementById('analysisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const request = {
+                wavyId: '@ViewBag.WavyId',
+                dataType: document.getElementById('dataType').value,
+                startTime: new Date(document.getElementById('startTime').value).toISOString(),
+                endTime: new Date(document.getElementById('endTime').value).toISOString(),
+                analysisType: document.getElementById('analysisType').value
+            };
+
+            try {
+                const response = await fetch('/Home/RequestAnalysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Resultado da análise:\n${JSON.stringify(result.data, null, 2)}`);
+                }
+            } catch (error) {
+                console.error('Erro ao solicitar análise:', error);
+                alert('Erro ao realizar análise. Verifique o console para mais detalhes.');
+            }
+        });
+
+        function exportData() {
+            const dataType = document.getElementById('dataType').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            
+            const url = `/Home/ExportData?wavyId=@ViewBag.WavyId&dataType=${dataType}&startTime=${startTime}&endTime=${endTime}`;
+            window.location.href = url;
+        }
+
+        // Inicializar com o primeiro tipo de dado disponível
+        window.addEventListener('load', function() {
+            const dataTypes = @Html.Raw(Json.Serialize(ViewBag.DataTypes));
+            if (dataTypes && dataTypes.length > 0) {
+                loadChartData('@ViewBag.WavyId', dataTypes[0]);
+            }
+        });
+    </script>
+} 
